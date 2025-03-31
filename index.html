@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo List</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Todo List</h1>
+      <p>Versão do aluno: Pedro Zich</p>
+      <input
+        type="text"
+        id="new-todo"
+        placeholder="Adicione aqui sua nova tarefa"
+      />
+      <button id="filter-all" class="filter-btn">Todas</button>
+      <button id="filter-done" class="filter-btn">Concluídas</button>
+      <button id="filter-not-done" class="filter-btn">Pendentes</button>
+
+      <ul id="todo-list">
+        <!-- Os Todos serão adicionados aqui dinamicamente -->
+      </ul>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
