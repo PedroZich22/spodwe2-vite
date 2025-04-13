@@ -1,81 +1,94 @@
+import { TodoFilter } from "./constants/filters";
+import { addTodo, getTodos, toggleTodo } from "./services/todo-service";
 import "./style.css";
 
-const todos = [];
-let filter = "all";
+let currentFilter = TodoFilter.ALL;
 
-document.getElementById("new-todo").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    const newTodoInput = document.getElementById("new-todo");
-    const todoText = newTodoInput.value.trim();
-    if (todoText === "") return;
+const newTodoInput = document.getElementById("new-todo");
+const todoListUl = document.getElementById("todo-list");
+const filterButtons = {
+  all: document.getElementById("filter-all"),
+  done: document.getElementById("filter-done"),
+  notDone: document.getElementById("filter-not-done"),
+};
 
-    addTodo(todoText);
-    newTodoInput.value = "";
-    renderTodos();
-  }
-});
-
-document
-  .getElementById("filter-all")
-  .addEventListener("click", () => setFilter("all"));
-document
-  .getElementById("filter-done")
-  .addEventListener("click", () => setFilter("done"));
-document
-  .getElementById("filter-not-done")
-  .addEventListener("click", () => setFilter("not-done"));
-
-function setFilter(newFilter) {
-  filter = newFilter;
-  renderTodos();
-  updateFilterButtons();
+async function init() {
+  setupEventListeners();
+  await loadTodos();
 }
 
-function updateFilterButtons() {
-  document
-    .querySelectorAll(".filter-btn")
-    .forEach((btn) => btn.classList.remove("active"));
-  document.getElementById(`filter-${filter}`).classList.add("active");
+function setupEventListeners() {
+  newTodoInput.addEventListener("keypress", handleNewTodoKeyPress);
+
+  filterButtons.all.addEventListener("click", () => setFilter(TodoFilter.ALL));
+  filterButtons.done.addEventListener("click", () =>
+    setFilter(TodoFilter.DONE)
+  );
+  filterButtons.notDone.addEventListener("click", () =>
+    setFilter(TodoFilter.NOT_DONE)
+  );
 }
 
-function renderTodos() {
-  updateFilterButtons();
-  const todoListUl = document.getElementById("todo-list");
+async function handleNewTodoKeyPress(e) {
+  if (e.key !== "Enter") return;
+
+  const todoText = newTodoInput.value.trim();
+  if (!todoText) return;
+
+  await addTodo(todoText);
+  await loadTodos();
+}
+
+async function loadTodos() {
+  const todos = await getTodos(currentFilter);
+  renderTodos(todos);
+}
+
+async function setFilter(filter) {
+  currentFilter = filter;
+  await loadTodos();
+  updateActiveFilterButton();
+}
+
+function renderTodos(todos) {
   todoListUl.innerHTML = "";
 
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === "done") return todo.done;
-    if (filter === "not-done") return !todo.done;
-    return true;
+  todos.forEach((todo) => {
+    const todoItemLi = createTodoElement(todo);
+    todoListUl.appendChild(todoItemLi);
   });
 
-  for (const todo of filteredTodos) {
-    const todoItemLi = document.createElement("li");
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = todo.done;
-    checkbox.addEventListener("change", () => {
-      todo.done = checkbox.checked;
-      renderTodos();
-    });
-
-    const todoTextSpan = document.createElement("span");
-    todoTextSpan.textContent = todo.text;
-    if (todo.done) {
-      todoTextSpan.style.textDecoration = "line-through";
-    }
-
-    todoItemLi.appendChild(checkbox);
-    todoItemLi.appendChild(todoTextSpan);
-    todoListUl.appendChild(todoItemLi);
-  }
+  updateActiveFilterButton();
 }
 
-function addTodo(todoText) {
-  const id = todos.length;
-  const newTodo = { id, text: todoText, done: false };
-  todos.push(newTodo);
+function createTodoElement(todo) {
+  const li = document.createElement("li");
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = todo.done;
+  checkbox.addEventListener("change", async () => {
+    await toggleTodo(todo.id, todo.done);
+    await loadTodos();
+  });
+
+  const span = document.createElement("span");
+  span.textContent = todo.text;
+  span.style.textDecoration = todo.done ? "line-through" : "none";
+
+  li.appendChild(checkbox);
+  li.appendChild(span);
+
+  return li;
 }
 
-renderTodos();
+function updateActiveFilterButton() {
+  Object.entries(filterButtons).forEach(([filter, button]) => {
+    button.classList.toggle(
+      "active",
+      currentFilter === TodoFilter[filter.toUpperCase()]
+    );
+  });
+}
+
+init();
